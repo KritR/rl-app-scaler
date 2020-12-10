@@ -22,7 +22,9 @@ COPY poetry.lock pyproject.toml /app/
 RUN poetry config virtualenvs.in-project false
 RUN poetry install --no-interaction
 
-COPY ./app_agent/ .
+ENV FLASK_APP app.py
+
+COPY ./app_agent/ /app/
 
 # run entrypoint.sh
 ENTRYPOINT ["poetry", "run", "flask", "run", "--host=0.0.0.0"]
