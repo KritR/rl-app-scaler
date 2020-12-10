@@ -4,12 +4,12 @@ import random
 import time
 import node as n
 import numpy as np
-from gym import spaces
+from gym import spaces, Env
 from typing import Any, Dict, List, Tuple
 import json
 from subprocess import check_output
 
-class Orchestrator(gym.Env):
+class Orchestrator(Env):
     """
     Define a simple orchestrator environment.
     The environment defines which actions can be taken at which point and
@@ -25,7 +25,7 @@ class Orchestrator(gym.Env):
         self.IMAGE_NAME = "app-agent"
         self.MIN_NODES = 1
         self.MAX_NODES = 10
-        self.ACTIONS = Enum('UPGRADE_RAM', 'UPGRADE_CPU', 'DUPLICATE', 'DOWNGRADE_RAM', 'DOWNGRADE_CPU', 'DESTROY', 'REST')
+        self.ACTIONS = Enum('ACTIONS','UPGRADE_RAM UPGRADE_CPU DUPLICATE DOWNGRADE_RAM DOWNGRADE_CPU DESTROY REST')
         self.RAM_OPTS = [(0,64), (1,128), (2, 256)]
         self.CPU_OPTS = [(0,0.1), (1, 0.2), (2, 0.4)]
 
@@ -42,7 +42,7 @@ class Orchestrator(gym.Env):
         self.action_episode_memory: List[Any] = []
 
         self.nodes = set()
-        for i in MIN_NODES:
+        for i in range(self.MIN_NODES):
             self._create_node(self.CPU_OPTS[0], self.RAM_OPTS[0])
 
         self.current_node = random.choice(tuple(self.nodes)) 
@@ -87,8 +87,8 @@ class Orchestrator(gym.Env):
 
     def _take_action(self, action: int) -> None:
         self.action_episode_memory[self.curr_episode].append(action)
+        print("Taking action " + str(self.ACTIONS(action + 1).name))
 
-        self.ACTIONS = Enum('UPGRADE_RAM', 'UPGRADE_CPU', 'DUPLICATE', 'DOWNGRADE_RAM', 'DOWNGRADE_CPU', 'DESTROY', 'REST')
         if action == self.ACTIONS['UPGRADE_RAM']:
             new_ram = self.current_node.ram[0] 
             if new_ram[0] + 1 < len(self.RAM_OPTS):
@@ -135,7 +135,7 @@ class Orchestrator(gym.Env):
         for n in self.nodes:
             n.destroy()
         self.nodes = set()
-        for i in MIN_NODES:
+        for i in range(self.MIN_NODES):
             self._create_node(self.CPU_OPTS[0], self.RAM_OPTS[0])
 
         self.current_node = random.choice(tuple(self.nodes)) 
@@ -145,7 +145,7 @@ class Orchestrator(gym.Env):
     def _render(self, mode: str = "human", close: bool = False) -> None:
         return None
 
-    def _get_state(self, node) -> List[int]:
+    def _get_state(self) -> List[int]:
         """
         Cpu Level: n
         Ram Level: n
@@ -158,9 +158,9 @@ class Orchestrator(gym.Env):
         """
         network_cost = sum([n.cost for n in self.nodes]) # sum of node cost
         network_avg, network_worst = self._test_network()
-        cpu_load, mem_load, cost = node.query()
+        cpu_load, mem_load, cost = self.current_node.query()
 
-        return [node.cpu, node.ram, cost, cpu_load, mem_load, network_avg, network_worst]
+        return [self.current_node.cpu[0]/len(self.CPU_OPTS), self.current_node.ram[0]/len(self.RAM_OPTS), cost, cpu_load, mem_load, network_avg, network_worst]
 
     def _test_network(self):
         output = check_output("./test-nodes.sh").decode('utf-8')
@@ -176,7 +176,7 @@ class Orchestrator(gym.Env):
         self.nodes.add(new_node)
 
     def _destroy_node(self, node):
-        if len(self.nodes) < Orchestrator.MIN_NODES:
+        if len(self.nodes) <= self.MIN_NODES:
             return
         node.shutdown()
         self.nodes.remove(node)

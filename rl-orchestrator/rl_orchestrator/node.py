@@ -7,7 +7,7 @@ class Node:
         self.cpu = cpu
         self.ram = ram
         self.cost = (1 + cpu[0]) + 2*(ram[0] + 1)
-        start_cmd = ["docker", "run", "--rm", "-d", "--name", self.node_name, "--net", "rl-test", "--network-alias", "apps", "--memory", f"{ram[1]}m", "--cpus", str(cpu[1]), "-p", "5000:5000", image_name]
+        start_cmd = ["docker", "run", "--rm", "-d", "--name", self.node_name, "--net", "rl-test", "--network-alias", "apps", "--memory", f"{ram[1]}m", "--cpus", str(cpu[1]), image_name]
         print(start_cmd)
         run(start_cmd)
 
