@@ -20,6 +20,6 @@ class Node:
         return (cpu, mem, self.cost)
 
     def destroy(self):
-        destroy_cmd = ["docker", "stop", self.node_name]
+        destroy_cmd = ["docker", "stop", "-t", "0", self.node_name]
         run(destroy_cmd)
 
